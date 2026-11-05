@@ -13,16 +13,18 @@
   html, body { margin:0; height:100%; background:var(--bg); color:var(--fg);
     font:12px/1.4 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif; }
   #app { display:flex; flex-direction:column; height:100%; }
-  .bar { display:flex; align-items:center; gap:6px; padding:6px 8px; border-bottom:1px solid var(--line); flex:0 0 auto; min-height:38px; }
+  .bar { display:flex; align-items:center; gap:6px; padding:8px 10px; border-bottom:1px solid var(--line); flex:0 0 auto; min-height:42px; }
   .who { font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .range { color:var(--sub); white-space:nowrap; }
+  .range { color:var(--fg); font-weight:600; white-space:nowrap; }
+  .who + .range { color:var(--sub); font-weight:400; }
   .sp { flex:1; }
-  button { font:inherit; color:var(--fg); background:var(--btn); border:0; border-radius:5px; padding:3px 8px; cursor:pointer; white-space:nowrap; }
+  button { font:inherit; color:var(--fg); background:transparent; border:1px solid var(--line); border-radius:6px; padding:3px 9px; cursor:pointer; white-space:nowrap; transition:background .15s; }
   button:hover { background:var(--btnh); }
-  .seg { display:inline-flex; background:var(--btn); border-radius:5px; padding:2px; }
-  .seg button { background:transparent; padding:2px 7px; }
-  .seg button.on { background:var(--bg); box-shadow:0 0 0 1px var(--line); }
-  .stamp { color:var(--sub); font-size:11px; }
+  .seg { display:inline-flex; background:var(--btn); border-radius:7px; padding:2px; gap:2px; }
+  .seg button { background:transparent; border:0; padding:2px 8px; color:var(--sub); }
+  .seg button.on { background:var(--bg); color:var(--fg); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line); }
+  .clear .seg button.on { background:rgba(255,255,255,.7); }
+  .stamp { color:var(--sub); font-size:11px; border:0; }
   .legend { display:flex; flex-wrap:wrap; gap:4px 12px; padding:4px 8px; border-bottom:1px solid var(--line); color:var(--sub); font-size:11px; flex:0 0 auto; }
   .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
   .legend .ng { color:#d44c47; }
@@ -42,7 +44,8 @@
   .col { flex:1; min-width:0; position:relative; border-left:1px solid var(--line2); }
   .col.today { background:color-mix(in srgb, var(--today) 5%, transparent); }
   .hl { position:absolute; left:0; right:0; border-top:1px solid var(--line2); }
-  .ev { position:absolute; overflow:hidden; border-radius:4px; padding:2px 4px; font-size:11px; line-height:1.3; border-left:3px solid; }
+  .ev { position:absolute; overflow:hidden; border-radius:5px; padding:3px 5px; font-size:11px; line-height:1.3; border-left:3px solid; transition:filter .15s; }
+  .ev:hover { filter:brightness(.96); }
   .ev .t { font-weight:600; word-break:break-all; }
   .ev .h { color:var(--sub); font-size:10px; }
   .tent { border-left-style:dashed !important; opacity:.75; }
@@ -110,7 +113,7 @@
     const w = NCW.jst(d).getUTCDay();
     return w !== 0 && w !== 6;
   }
-  function label() { return P.title || (P.cals[0] ? (P.cals[0].label || P.cals[0].id.split('@')[0]) : 'カレンダー'); }
+  function label() { return P.title; } // タイトルは入れたときだけ出す（「〇〇の予定」を勝手に足さない）
 
   // 表示に要る期間（[from, to)）
   function range(v) {
@@ -129,7 +132,7 @@
   function loginCard(message, blocked) {
     app.innerHTML = '';
     const c = el('div', 'card');
-    c.appendChild(el('h1', '', label() + ' の予定'));
+    c.appendChild(el('h1', '', label() || 'カレンダー'));
     c.appendChild(el('p', '', '会社の Google アカウントでログインすると表示されます。'));
     const b = el('button', 'gbtn');
     b.innerHTML = '<svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.4 0-11.7-4.1-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg><span>Google でログインして表示</span>';
@@ -201,7 +204,7 @@
 
   function header(v, r) {
     const bar = el('div', 'bar');
-    bar.appendChild(el('div', 'who', label() + (P.title ? '' : ' の予定')));
+    if (label()) bar.appendChild(el('div', 'who', label()));
     const j = NCW.jst(S.date);
     const txt = v === 'day' ? NCW.md(S.date)
       : v === 'month' ? j.getUTCFullYear() + '年' + (j.getUTCMonth() + 1) + '月'
