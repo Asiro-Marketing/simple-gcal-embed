@@ -1,3 +1,4 @@
 gas/
 .DS_Store
 .firebase/
+firebase-debug.log
