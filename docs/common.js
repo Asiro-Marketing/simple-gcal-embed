@@ -211,7 +211,9 @@
   /* ---------- 埋め込みリンクの設定（# の後ろに置くので、サーバーへは送られない） ---------- */
   // c=カレンダーID|色(#rrggbb か auto)|表示名 を、カレンダーの数だけ並べる
   NCW.readHash = function (hash) {
-    const q = new URLSearchParams((hash === undefined ? location.hash : hash).replace(/^#/, ''));
+    // 設定は # の後ろが基本。Notion のアプリなどが # を落として外のブラウザに渡すことがあるので、? の後ろも読む
+    const src = hash !== undefined ? hash : (location.hash.length > 1 ? location.hash : location.search);
+    const q = new URLSearchParams(src.replace(/^[#?]/, ''));
     let cals = q.getAll('c').map(function (v) {
       const p = v.split('|');
       return {id: p[0], color: /^#[0-9a-fA-F]{6}$/.test(p[1] || '') ? p[1] : 'auto', label: p.slice(2).join('|')};
