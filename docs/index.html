@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カレンダーを Notion に埋め込む</title>
+<style>
+  :root { --bg:#fff; --fg:#37352f; --sub:#787774; --line:#e9e9e7; --soft:#f7f7f5; --acc:#2383e2; }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.7 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:40px 16px 64px; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  .lead { color:var(--sub); margin:0 0 28px; }
+  section { border:1px solid var(--line); border-radius:8px; padding:18px 20px; margin-bottom:16px; }
+  h2 { font-size:15px; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  h2 .n { display:inline-flex; width:22px; height:22px; border-radius:50%; background:var(--fg); color:#fff; font-size:12px; align-items:center; justify-content:center; }
+  .gbtn { font:inherit; background:#fff; color:#3c4043; border:1px solid #dadce0; border-radius:20px; padding:8px 18px; font-weight:600; display:inline-flex; align-items:center; gap:10px; cursor:pointer; }
+  .gbtn:hover { background:#f8f9fa; }
+  .me { color:var(--sub); }
+  .me b { color:var(--fg); }
+  .link { font:inherit; background:none; border:0; color:var(--sub); text-decoration:underline; cursor:pointer; padding:0; }
+  label.row { display:flex; align-items:center; gap:10px; margin:8px 0; }
+  .row .k { flex:0 0 7em; color:var(--sub); }
+  input[type=text] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; width:100%; max-width:360px; }
+  select { font:inherit; padding:5px 8px; border:1px solid var(--line); border-radius:6px; }
+  .checks label { display:block; margin:6px 0; }
+  .out { display:flex; gap:8px; }
+  .out input { flex:1; max-width:none; background:var(--soft); }
+  .btn { font:inherit; background:var(--fg); color:#fff; border:0; border-radius:6px; padding:6px 14px; cursor:pointer; white-space:nowrap; }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .preview { margin-top:14px; border:1px solid var(--line); border-radius:6px; overflow:hidden; height:520px; resize:vertical; }
+  .preview iframe { width:100%; height:100%; border:0; display:block; }
+  ol { margin:8px 0 0; padding-left:1.4em; }
+  .notes { background:var(--soft); border:0; }
+  .notes ul { margin:0; padding-left:1.2em; color:var(--sub); }
+  .err { color:#d44c47; }
+  .muted { color:var(--sub); font-size:12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>カレンダーを Notion に埋め込む</h1>
+  <p class="lead">自分の Google カレンダーを、Notion のページに時間割として出せます。リンクを作って Notion に貼るだけです。</p>
+
+  <section>
+    <h2><span class="n">1</span>会社の Google アカウントでログイン</h2>
+    <div id="login"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>表示のしかたを選ぶ</h2>
+    <label class="row"><span class="k">表示名</span><input type="text" id="name" maxlength="30" placeholder="例：山根"></label>
+    <label class="row"><span class="k">カレンダー</span>
+      <select id="which"><option value="me">自分のカレンダー</option><option value="other">ほかのカレンダー（チームの共有カレンダーなど）</option></select>
+    </label>
+    <label class="row" id="otherRow" hidden><span class="k">カレンダーID</span><input type="text" id="other" placeholder="Google カレンダーの設定の「カレンダーの統合」にある ID"></label>
+    <label class="row"><span class="k">表示</span>
+      <select id="view"><option value="auto">自動（広ければ週、狭ければ日）</option><option value="week">週</option><option value="day">日</option></select>
+    </label>
+    <div class="checks">
+      <label><input type="checkbox" id="days5"> 土日を出さない</label>
+      <label><input type="checkbox" id="hide"> 予定名を隠して「予定あり」とだけ出す</label>
+      <label><input type="checkbox" id="dark"> 暗い色で出す（Notion をダークモードで使う人向け）</label>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>リンクをコピーして Notion に貼る</h2>
+    <div class="out"><input type="text" id="url" readonly placeholder="ログインするとリンクができます"><button class="btn" id="copy" disabled>コピー</button></div>
+    <ol>
+      <li>Notion のページで「/埋め込み」（英語なら /embed）と入力して選ぶ</li>
+      <li>コピーしたリンクを貼り、「リンクを埋め込む」を押す</li>
+      <li>枠の右下の角を下へドラッグして高さを合わせる（週の表示なら 600px くらい）</li>
+    </ol>
+    <div class="preview"><iframe id="pv" title="表示の見本"></iframe></div>
+    <p class="muted" id="pvnote">ログインする前は見本の予定で表示しています。</p>
+  </section>
+
+  <section class="notes">
+    <h2>知っておくこと</h2>
+    <ul>
+      <li>見る人も、会社の Google アカウントでのログインが要ります。ログインは1時間ごとにボタンを1回押す形です。</li>
+      <li>見える範囲は Google カレンダーの共有設定のとおりです。予定名が出るのは、あなたが予定の詳細を社内に公開しているか、見る人に共有している場合だけです。非公開にした予定は「予定あり」と出ます。</li>
+      <li>Notion のアプリで表示されないときは、ブラウザで Notion を開いてください。</li>
+      <li>このページは登録の記録を持ちません。やめたいときは Notion から埋め込みを消すだけです。</li>
+    </ul>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="common.js"></script>
+<script>
+(function () {
+  const $ = function (id) { return document.getElementById(id); };
+  let me = null;
+  const base = new URL('widget.html', location.href).href;
+
+  function drawLogin(msg) {
+    const box = $('login');
+    box.innerHTML = '';
+    if (me) {
+      const p = document.createElement('div');
+      p.className = 'me';
+      p.innerHTML = 'ログイン中：<b></b>　';
+      p.querySelector('b').textContent = me.email;
+      const out = document.createElement('button');
+      out.className = 'link'; out.textContent = 'ログアウト';
+      out.onclick = function () { NCW.logout(); me = null; drawLogin(); update(); };
+      p.appendChild(out);
+      box.appendChild(p);
+      return;
+    }
+    const b = document.createElement('button');
+    b.className = 'gbtn';
+    b.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.4 0-11.7-4.1-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg><span>Google でログイン</span>';
+    b.onclick = function () {
+      NCW.login().then(whoami).catch(function (e) { drawLogin(e.message); });
+    };
+    box.appendChild(b);
+    if (msg) { const e = document.createElement('p'); e.className = 'err'; e.textContent = msg; box.appendChild(e); }
+  }
+
+  async function whoami() {
+    try {
+      const u = await NCW.me();
+      if (!u.email || !u.email.endsWith('@' + NCW.DOMAIN)) {
+        NCW.logout();
+        return drawLogin('会社のアカウント（@' + NCW.DOMAIN + '）でログインしてください。');
+      }
+      me = u;
+      if (!$('name').value) $('name').value = (u.family_name || u.name || u.email.split('@')[0]).trim();
+      drawLogin();
+      update();
+    } catch (e) {
+      drawLogin(e.code === 401 ? '' : e.message);
+    }
+  }
+
+  function update() {
+    $('otherRow').hidden = $('which').value !== 'other';
+    const cal = $('which').value === 'other' ? $('other').value.trim() : (me ? me.email : '');
+    const opts = {cal: cal, name: $('name').value.trim(), view: $('view').value, days: $('days5').checked ? 5 : 7, hide: $('hide').checked, theme: $('dark').checked ? 'dark' : 'light'};
+    const ready = !!(me && cal);
+    $('url').value = ready ? base + NCW.makeHash(opts) : '';
+    $('copy').disabled = !ready;
+    const pv = ready ? base + NCW.makeHash(opts) : base + NCW.makeHash(Object.assign({}, opts, {cal: opts.cal || 'sample', name: opts.name || '見本'})) + '&demo=1';
+    if ($('pv').src !== pv) $('pv').src = pv;
+    $('pvnote').hidden = ready;
+  }
+
+  ['name', 'which', 'other', 'view', 'days5', 'hide', 'dark'].forEach(function (id) {
+    $(id).addEventListener('input', update);
+    $(id).addEventListener('change', update);
+  });
+  $('copy').onclick = function () {
+    const t = $('url');
+    t.select();
+    (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).catch(function () { document.execCommand('copy'); });
+    $('copy').textContent = 'コピーしました';
+    setTimeout(function () { $('copy').textContent = 'コピー'; }, 1500);
+  };
+
+  drawLogin();
+  update();
+  NCW.ready.then(function () { if (NCW.loggedIn()) whoami(); });
+})();
+</script>
+</body>
+</html>

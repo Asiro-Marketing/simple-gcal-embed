@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カレンダー</title>
+<style>
+  :root { --bg:#fff; --fg:#37352f; --sub:#787774; --line:#ebebea; --line2:#f4f4f3; --today:#2383e2; --now:#eb5757; --btn:#f1f1ef; --btnh:#e6e6e4; }
+  .dark { --bg:#191919; --fg:#d4d4d4; --sub:#8e8e8e; --line:#2f2f2f; --line2:#242424; --today:#529cca; --now:#ff6b6b; --btn:#2a2a2a; --btnh:#333; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font:12px/1.4 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif; }
+  #app { display:flex; flex-direction:column; height:100%; }
+  .bar { display:flex; align-items:center; gap:6px; padding:6px 8px; border-bottom:1px solid var(--line); flex:0 0 auto; min-height:38px; }
+  .who { font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .range { color:var(--sub); white-space:nowrap; }
+  .sp { flex:1; }
+  button { font:inherit; color:var(--fg); background:var(--btn); border:0; border-radius:5px; padding:3px 8px; cursor:pointer; white-space:nowrap; }
+  button:hover { background:var(--btnh); }
+  .seg { display:inline-flex; background:var(--btn); border-radius:5px; padding:2px; }
+  .seg button { background:transparent; padding:2px 7px; }
+  .seg button.on { background:var(--bg); box-shadow:0 0 0 1px var(--line); }
+  .stamp { color:var(--sub); font-size:11px; white-space:nowrap; }
+  .head { display:flex; flex:0 0 auto; border-bottom:1px solid var(--line); }
+  .gut { flex:0 0 34px; }
+  .dh { flex:1; min-width:0; text-align:center; padding:4px 0 3px; color:var(--sub); }
+  .dh b { display:inline-block; min-width:20px; padding:0 4px; border-radius:10px; color:var(--fg); font-weight:600; }
+  .dh.today b { background:var(--today); color:#fff; }
+  .allday { display:flex; flex:0 0 auto; border-bottom:1px solid var(--line); }
+  .allday .gut { color:var(--sub); font-size:10px; padding:3px 0 0 4px; }
+  .ad { flex:1; min-width:0; padding:2px; border-left:1px solid var(--line2); }
+  .chip { font-size:11px; padding:1px 5px; margin-bottom:2px; border-radius:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .body { flex:1; overflow-y:auto; position:relative; }
+  .grid { display:flex; position:relative; }
+  .times { flex:0 0 34px; position:relative; }
+  .times span { position:absolute; right:5px; transform:translateY(-50%); color:var(--sub); font-size:10px; }
+  .col { flex:1; min-width:0; position:relative; border-left:1px solid var(--line2); }
+  .col.today { background:color-mix(in srgb, var(--today) 4%, transparent); }
+  .hl { position:absolute; left:0; right:0; border-top:1px solid var(--line2); }
+  .ev { position:absolute; overflow:hidden; border-radius:4px; padding:2px 4px; font-size:11px; line-height:1.3; border-left:3px solid; }
+  .ev .t { font-weight:600; word-break:break-all; }
+  .ev .h { color:var(--sub); font-size:10px; }
+  .ev.tent { border-left-style:dashed; opacity:.75; }
+  .now { position:absolute; left:0; right:0; border-top:2px solid var(--now); z-index:3; }
+  .now::before { content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--now); }
+  .card { margin:auto; max-width:340px; text-align:center; padding:20px; }
+  .card h1 { font-size:15px; margin:0 0 8px; }
+  .card p { color:var(--sub); margin:0 0 14px; }
+  .gbtn { background:#fff; color:#3c4043; border:1px solid #dadce0; border-radius:20px; padding:8px 16px; font-weight:600; display:inline-flex; align-items:center; gap:8px; }
+  .gbtn:hover { background:#f8f9fa; }
+  .err { color:#d44c47; margin-top:10px; }
+  .note { font-size:11px; color:var(--sub); margin-top:12px; }
+  @media (max-width: 420px) { .range, .stamp { display:none; } .who { flex:0 1 auto; min-width:3em; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="common.js"></script>
+<script>
+(function () {
+  const P = NCW.readHash();
+  const demo = new URLSearchParams(location.hash.replace(/^#/, '')).get('demo') === '1';
+  const app = document.getElementById('app');
+  if (P.theme === 'dark') document.documentElement.classList.add('dark');
+  const S = {week: NCW.weekStart(Date.now()), day: NCW.dayStart(Date.now()), view: P.view, events: null, loadedWeek: null, stamp: ''};
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function tint(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function view() {
+    if (S.view !== 'auto') return S.view;
+    return app.clientWidth < 520 ? 'day' : 'week';
+  }
+
+  function loginCard(message) {
+    app.innerHTML = '';
+    const c = el('div', 'card');
+    c.appendChild(el('h1', '', (P.name || P.cal.split('@')[0] || 'カレンダー') + ' の予定'));
+    c.appendChild(el('p', '', '会社の Google アカウントでログインすると表示されます。'));
+    const b = el('button', 'gbtn');
+    b.innerHTML = '<svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.4 0-11.7-4.1-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg><span>Google でログインして表示</span>';
+    b.onclick = function () {
+      NCW.login().then(load).catch(function (e) { loginCard(e.message); });
+    };
+    c.appendChild(b);
+    c.appendChild(el('div', 'note', '一度ログインすると、1時間は押さずに表示されます。'));
+    if (message) c.appendChild(el('div', 'err', message));
+    app.appendChild(c);
+  }
+
+  function errorCard(message) {
+    app.innerHTML = '';
+    const c = el('div', 'card');
+    c.appendChild(el('h1', '', '表示できません'));
+    c.appendChild(el('p', '', message));
+    const b = el('button', '', 'もう一度読み込む');
+    b.onclick = function () { load(); };
+    c.appendChild(b);
+    app.appendChild(c);
+  }
+
+  async function load() {
+    if (!P.cal) return errorCard('リンクにカレンダーの指定がありません。リンクを作り直してください。');
+    if (!demo && !NCW.loggedIn()) return loginCard();
+    try {
+      const items = demo ? sample(S.week) : await NCW.week(P.cal, S.week, P.hide);
+      S.events = items;
+      S.loadedWeek = S.week;
+      S.stamp = NCW.hm(Date.now());
+      render();
+    } catch (e) {
+      if (e.code === 401) return loginCard();
+      if (e.code === 404 || e.code === 403) return errorCard('このカレンダーを見る権限がありません。持ち主が Google カレンダーで予定を社内に公開しているか、あなたに共有しているかを確かめてください。');
+      errorCard(e.message);
+    }
+  }
+
+  function go(step) {
+    if (view() === 'day') {
+      S.day += step * 864e5;
+      if (step === 0) S.day = NCW.dayStart(Date.now());
+      S.week = NCW.weekStart(S.day);
+    } else {
+      S.week = step === 0 ? NCW.weekStart(Date.now()) : S.week + step * 7 * 864e5;
+      S.day = Math.min(Math.max(S.day, S.week), S.week + 6 * 864e5);
+      if (step === 0) S.day = NCW.dayStart(Date.now());
+    }
+    if (S.week !== S.loadedWeek) load(); else render();
+  }
+
+  function render() {
+    const v = view();
+    const now = Date.now();
+    const today = NCW.dayStart(now);
+    let days = [];
+    if (v === 'day') days = [S.day];
+    else for (let i = 0; i < 7; i++) if (P.days === 7 || i < 5) days.push(S.week + i * 864e5);
+
+    app.innerHTML = '';
+    const bar = el('div', 'bar');
+    bar.appendChild(el('div', 'who', (P.name || P.cal.split('@')[0]) + ' の予定'));
+    bar.appendChild(el('div', 'range', v === 'day' ? NCW.md(S.day) : NCW.md(days[0]) + '–' + NCW.md(days[days.length - 1])));
+    bar.appendChild(el('div', 'sp'));
+    [['‹', -1, '前へ'], ['今日', 0, '今日へ'], ['›', 1, '次へ']].forEach(function (x) {
+      const b = el('button', '', x[0]); b.title = x[2]; b.onclick = function () { go(x[1]); }; bar.appendChild(b);
+    });
+    const seg = el('div', 'seg');
+    [['week', '週'], ['day', '日']].forEach(function (x) {
+      const b = el('button', v === x[0] ? 'on' : '', x[1]);
+      b.onclick = function () { S.view = x[0]; if (x[0] === 'day' && (S.day < S.week || S.day >= S.week + 7 * 864e5)) S.day = S.week; render(); };
+      seg.appendChild(b);
+    });
+    bar.appendChild(seg);
+    const st = el('button', 'stamp', '↻ ' + S.stamp); st.title = '読み込み直す'; st.onclick = function () { load(); };
+    bar.appendChild(st);
+    app.appendChild(bar);
+
+    const head = el('div', 'head');
+    head.appendChild(el('div', 'gut'));
+    days.forEach(function (d) {
+      const j = NCW.jst(d);
+      const h = el('div', 'dh' + (d === today ? ' today' : ''));
+      h.appendChild(document.createTextNode(NCW.WD[j.getUTCDay()] + ' '));
+      h.appendChild(el('b', '', String(j.getUTCDate())));
+      head.appendChild(h);
+    });
+    app.appendChild(head);
+
+    const evs = S.events || [];
+    const allDay = evs.filter(function (e) {
+      return e.allDay && days.some(function (d) { return e.start < d + 864e5 && e.end > d; });
+    });
+    if (allDay.length) {
+      const row = el('div', 'allday');
+      row.appendChild(el('div', 'gut', '終日'));
+      days.forEach(function (d) {
+        const c = el('div', 'ad');
+        allDay.filter(function (e) { return e.start < d + 864e5 && e.end > d; }).forEach(function (e) {
+          const ch = el('div', 'chip', e.title);
+          ch.style.background = tint(e.color, .18); ch.title = e.title;
+          c.appendChild(ch);
+        });
+        row.appendChild(c);
+      });
+      app.appendChild(row);
+    }
+
+    // 時間の範囲は 8〜20時を基本に、予定がはみ出す分だけ広げる
+    let h0 = 8, h1 = 20;
+    const timed = evs.filter(function (e) { return !e.allDay; });
+    days.forEach(function (d) {
+      timed.forEach(function (e) {
+        if (e.end <= d || e.start >= d + 864e5) return;
+        const s = Math.max(e.start, d), t = Math.min(e.end, d + 864e5);
+        h0 = Math.min(h0, Math.floor((s - d) / 3600e3));
+        h1 = Math.max(h1, Math.ceil((t - d) / 3600e3));
+      });
+    });
+    const body = el('div', 'body');
+    app.appendChild(body);
+    const hours = h1 - h0;
+    const hourPx = Math.max(22, Math.min(64, Math.floor((body.clientHeight - 2) / hours)));
+    const grid = el('div', 'grid');
+    grid.style.height = hours * hourPx + 'px';
+    const times = el('div', 'times');
+    for (let h = h0 + 1; h < h1; h++) {
+      const s = el('span', '', h + ':00'); s.style.top = (h - h0) * hourPx + 'px'; times.appendChild(s);
+    }
+    grid.appendChild(times);
+
+    days.forEach(function (d) {
+      const col = el('div', 'col' + (d === today && v === 'week' ? ' today' : ''));
+      for (let h = 1; h < hours; h++) { const l = el('div', 'hl'); l.style.top = h * hourPx + 'px'; col.appendChild(l); }
+      const list = timed.filter(function (e) { return e.end > d && e.start < d + 864e5; })
+        .map(function (e) {
+          return {e: e, s: Math.max(0, (e.start - d) / 60e3 - h0 * 60), t: Math.min(hours * 60, (e.end - d) / 60e3 - h0 * 60)};
+        })
+        .sort(function (a, b) { return a.s - b.s || b.t - a.t; });
+      layout(list).forEach(function (x) {
+        const box = el('div', 'ev' + (x.e.tentative ? ' tent' : ''));
+        const top = x.s * hourPx / 60, height = Math.max(14, (x.t - x.s) * hourPx / 60 - 1);
+        box.style.top = top + 'px';
+        box.style.height = height + 'px';
+        box.style.left = 'calc(' + (x.col / x.n * 100) + '% + 1px)';
+        box.style.width = 'calc(' + (100 / x.n) + '% - 3px)';
+        box.style.background = tint(x.e.color, .16);
+        box.style.borderLeftColor = x.e.color;
+        const span = NCW.hm(x.e.start) + '–' + NCW.hm(x.e.end);
+        box.title = x.e.title + '\n' + span;
+        box.appendChild(el('div', 't', x.e.title));
+        if (height >= 30) box.appendChild(el('div', 'h', span));
+        col.appendChild(box);
+      });
+      if (d === today) {
+        const m = (now - d) / 60e3 - h0 * 60;
+        if (m > 0 && m < hours * 60) { const n = el('div', 'now'); n.style.top = m * hourPx / 60 + 'px'; col.appendChild(n); }
+      }
+      grid.appendChild(col);
+    });
+    body.appendChild(grid);
+    if (body.scrollHeight > body.clientHeight) {
+      const nowH = (now - today) / 3600e3;
+      body.scrollTop = Math.max(0, ((nowH > h0 && nowH < h1 ? nowH - 1 : 8) - h0) * hourPx);
+    }
+  }
+
+  // 重なる予定を横に並べる（重なりのかたまりごとに列数をそろえる）
+  function layout(list) {
+    let cols = [], group = [], groupEnd = -1;
+    function flush() { group.forEach(function (x) { x.n = cols.length; }); group = []; cols = []; }
+    list.forEach(function (x) {
+      if (x.s >= groupEnd) { flush(); groupEnd = -1; }
+      let i = cols.findIndex(function (end) { return end <= x.s; });
+      if (i < 0) { i = cols.length; cols.push(x.t); } else cols[i] = x.t;
+      x.col = i; group.push(x); groupEnd = Math.max(groupEnd, x.t);
+    });
+    flush();
+    return list;
+  }
+
+  // 見本表示（#demo=1）。ログインせずに見た目を確かめる用
+  function sample(ws) {
+    const out = [];
+    const add = function (day, h, m, mins, title, color, tent) {
+      const s = ws + day * 864e5 + (h * 60 + m) * 60e3;
+      out.push({title: title, allDay: false, start: s, end: s + mins * 60e3, color: color, tentative: !!tent});
+    };
+    for (let d = 0; d < 5; d++) {
+      add(d, 9, 30, 30, '朝会', '#039be5');
+      add(d, 10, 0, 120, '広告の数値確認と調整', '#616161');
+      add(d, 13, 0, 60, d % 2 ? 'クライアント定例' : '資料づくり', d % 2 ? '#33b679' : '#616161');
+      add(d, 15, 0, 90, 'LP改善案の作成', '#616161');
+    }
+    add(2, 13, 30, 60, '社内MTG（重なり）', '#f4511e', true);
+    add(3, 17, 0, 60, '採用面接', '#8e24aa');
+    out.push({title: '在宅勤務', allDay: true, start: ws + 1 * 864e5, end: ws + 2 * 864e5, color: '#33b679'});
+    return out;
+  }
+
+  let lastW = 0;
+  window.addEventListener('resize', function () {
+    if (S.events && Math.abs(app.clientWidth - lastW) > 4) { lastW = app.clientWidth; render(); }
+  });
+  setInterval(function () { if (S.events) render(); }, 60e3); // 今の時刻の線を動かす
+  setInterval(function () { if (S.events && (demo || NCW.loggedIn()) && S.week === NCW.weekStart(Date.now())) load(); }, 5 * 60e3);
+  window.addEventListener('hashchange', function () { location.reload(); });
+
+  if (demo) load();
+  else Promise.race([NCW.ready, new Promise(function (r) { setTimeout(r, 6000); })]).then(load); // Google のスクリプトが読めなくても画面は出す
+})();
+</script>
+</body>
+</html>
