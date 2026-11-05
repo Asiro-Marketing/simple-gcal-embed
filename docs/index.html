@@ -59,12 +59,12 @@
     <label class="row" id="otherRow" hidden><span class="k">カレンダーID</span><input type="text" id="other" placeholder="例：xxxx@group.calendar.google.com"></label>
     <p class="muted" id="otherHelp" hidden>Google カレンダーの左の一覧でカレンダー名の右の「︙」→「設定と共有」→ 下のほうの「カレンダーの統合」にある「カレンダー ID」を貼ります。見る人がそのカレンダーを見る権限を持っていないと、予定は出ません。</p>
     <label class="row"><span class="k">表示</span>
-      <select id="view"><option value="auto">自動（Notion の枠が広ければ週、狭ければ日）</option><option value="week">週</option><option value="day">日</option></select>
+      <select id="view"><option value="auto">自動（貼った枠が広ければ週、狭ければ日）</option><option value="week">週</option><option value="day">日</option></select>
     </label>
     <div class="checks">
       <label><input type="checkbox" id="days5"> 土日を出さない</label>
       <label><input type="checkbox" id="hide"> 予定名を隠して「予定あり」とだけ出す（この枠を見る全員に対して。Google カレンダーの共有設定は変わりません）</label>
-      <label><input type="checkbox" id="dark"> 暗い色で出す（Notion をダークモードで使う人向け）</label>
+      <label><input type="checkbox" id="dark"> 暗い色で出す（貼る先の背景が暗いとき）</label>
     </div>
   </section>
 
@@ -91,7 +91,7 @@
       <li>見る人に見えるのは、その人が Google カレンダーであなたのカレンダーを開いたときと同じ中身だけです。社内の人に予定名まで見せているか、時間帯だけかは、Google カレンダーの「設定」→ 左の自分の名前 →「予定のアクセス権限」で確かめられます。</li>
       <li>予定ごとに「非公開」にした予定は、あなた自身が見ても「予定あり」とだけ出ます。見せたくない予定は Google カレンダーで「非公開」にしてください。</li>
       <li>リンクを社外の人に渡されても、会社のアカウントでログインできない人には何も出ません。予定は Google から見る人の画面へ直接届き、ほかの場所には保存されません。</li>
-      <li>やめるときは Notion の埋め込みを消すだけです。気になる場合は、上の手順で Google の許可も取り消してください。</li>
+      <li>やめるときは、貼った埋め込みを消すだけです。気になる場合は、上の手順で Google の許可も取り消してください。</li>
     </ul>
   </section>
 </main>
