@@ -79,9 +79,16 @@
       const body = await r.text();
       // 新しく足した権限にまだ同意していないときは、ログインし直してもらう
       if (/insufficient.*(scope|permission)|ACCESS_TOKEN_SCOPE_INSUFFICIENT/i.test(body)) { clear(); throw Object.assign(new Error('ログインが必要です。'), {code: 401}); }
-      throw Object.assign(new Error('読み込めませんでした（403）。'), {code: 403});
+      let why = ''; try { why = (JSON.parse(body).error || {}).message || ''; } catch (e) {}
+      throw Object.assign(new Error('Google で権限のエラー（403' + (why ? '：' + why : '') + '）'), {code: 403});
     }
-    if (!r.ok) throw Object.assign(new Error('読み込めませんでした（' + r.status + '）。'), {code: r.status});
+    if (!r.ok) {
+      // どの呼び出しの何のエラーかを画面に出す（「404」だけでは直せないため）
+      const what = /drive/.test(u.pathname) ? 'Google ドライブ（作ったリンクの保存）' : /calendarList/.test(u.pathname) ? 'カレンダーの一覧' : /events/.test(u.pathname) ? 'カレンダーの予定' : 'Google';
+      let why = '';
+      try { why = ((await r.json()).error || {}).message || ''; } catch (e) {}
+      throw Object.assign(new Error(what + 'でエラー（' + r.status + (why ? '：' + why : '') + '）'), {code: r.status});
+    }
     return r.status === 204 ? null : r.json();
   };
 
