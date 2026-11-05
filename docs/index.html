@@ -42,26 +42,28 @@
 <body>
 <main>
   <h1>カレンダーを Notion に埋め込む</h1>
-  <p class="lead">自分の Google カレンダーを、Notion のページに時間割として出せます。リンクを作って Notion に貼るだけです。</p>
+  <p class="lead">自分の Google カレンダーを、Notion のページに時間割として出せます。このページでリンクを作り、Notion に貼るだけです。どこにも登録はされません。</p>
 
   <section>
     <h2><span class="n">1</span>会社の Google アカウントでログイン</h2>
     <div id="login"></div>
+    <p class="muted">初めてログインすると、Google から「カレンダーの予定を見る」と「メールアドレス・名前を見る」の許可を求められます。予定を作る・変える・消す許可は求めません。許可は Google アカウントの「セキュリティ」→「サードパーティ製のアプリとサービス」からいつでも取り消せます。</p>
   </section>
 
   <section>
     <h2><span class="n">2</span>表示のしかたを選ぶ</h2>
-    <label class="row"><span class="k">表示名</span><input type="text" id="name" maxlength="30" placeholder="例：山根"></label>
+    <label class="row"><span class="k">表示名</span><input type="text" id="name" maxlength="30" placeholder="枠の左上に出る名前（例：山根）"></label>
     <label class="row"><span class="k">カレンダー</span>
       <select id="which"><option value="me">自分のカレンダー</option><option value="other">ほかのカレンダー（チームの共有カレンダーなど）</option></select>
     </label>
-    <label class="row" id="otherRow" hidden><span class="k">カレンダーID</span><input type="text" id="other" placeholder="Google カレンダーの設定の「カレンダーの統合」にある ID"></label>
+    <label class="row" id="otherRow" hidden><span class="k">カレンダーID</span><input type="text" id="other" placeholder="例：xxxx@group.calendar.google.com"></label>
+    <p class="muted" id="otherHelp" hidden>Google カレンダーの左の一覧でカレンダー名の右の「︙」→「設定と共有」→ 下のほうの「カレンダーの統合」にある「カレンダー ID」を貼ります。見る人がそのカレンダーを見る権限を持っていないと、予定は出ません。</p>
     <label class="row"><span class="k">表示</span>
-      <select id="view"><option value="auto">自動（広ければ週、狭ければ日）</option><option value="week">週</option><option value="day">日</option></select>
+      <select id="view"><option value="auto">自動（Notion の枠が広ければ週、狭ければ日）</option><option value="week">週</option><option value="day">日</option></select>
     </label>
     <div class="checks">
       <label><input type="checkbox" id="days5"> 土日を出さない</label>
-      <label><input type="checkbox" id="hide"> 予定名を隠して「予定あり」とだけ出す</label>
+      <label><input type="checkbox" id="hide"> 予定名を隠して「予定あり」とだけ出す（この枠を見る全員に対して。Google カレンダーの共有設定は変わりません）</label>
       <label><input type="checkbox" id="dark"> 暗い色で出す（Notion をダークモードで使う人向け）</label>
     </div>
   </section>
@@ -72,7 +74,8 @@
     <ol>
       <li>Notion のページで「/埋め込み」（英語なら /embed）と入力して選ぶ</li>
       <li>コピーしたリンクを貼り、「リンクを埋め込む」を押す</li>
-      <li>枠の右下の角を下へドラッグして高さを合わせる（週の表示なら 600px くらい）</li>
+      <li>枠の右下の角を下へドラッグし、朝9時から夕方6時くらいまでが見える高さにする（下の見本の枠と同じくらい）</li>
+      <li>Notion のアプリ（パソコン・スマホ）では「Google でログイン」を押しても進まないことがあります。そのときは Chrome などのブラウザで Notion を開いてください</li>
     </ol>
     <div class="preview"><iframe id="pv" title="表示の見本"></iframe></div>
     <p class="muted" id="pvnote">ログインする前は見本の予定で表示しています。</p>
@@ -81,10 +84,11 @@
   <section class="notes">
     <h2>知っておくこと</h2>
     <ul>
-      <li>見る人も、会社の Google アカウントでのログインが要ります。ログインは1時間ごとにボタンを1回押す形です。</li>
-      <li>見える範囲は Google カレンダーの共有設定のとおりです。予定名が出るのは、あなたが予定の詳細を社内に公開しているか、見る人に共有している場合だけです。非公開にした予定は「予定あり」と出ます。</li>
-      <li>Notion のアプリで表示されないときは、ブラウザで Notion を開いてください。</li>
-      <li>このページは登録の記録を持ちません。やめたいときは Notion から埋め込みを消すだけです。</li>
+      <li>枠を見る人も、会社の Google アカウントでログインします。ログインは1時間で切れ、切れると枠に「Google でログイン」のボタンが出ます。押すとまた予定が出ます。ページを開いた人がそれぞれ自分で押します。</li>
+      <li>見る人に見えるのは、その人が Google カレンダーであなたのカレンダーを開いたときと同じ中身だけです。社内の人に予定名まで見せているか、時間帯だけかは、Google カレンダーの「設定」→ 左の自分の名前 →「予定のアクセス権限」で確かめられます。</li>
+      <li>予定ごとに「非公開」にした予定は、あなた自身が見ても「予定あり」とだけ出ます。見せたくない予定は Google カレンダーで「非公開」にしてください。</li>
+      <li>リンクを社外の人に渡されても、会社のアカウントでログインできない人には何も出ません。予定は Google から見る人の画面へ直接届き、ほかの場所には保存されません。</li>
+      <li>やめるときは Notion の埋め込みを消すだけです。気になる場合は、上の手順で Google の許可も取り消してください。</li>
     </ul>
   </section>
 </main>
@@ -141,6 +145,7 @@
 
   function update() {
     $('otherRow').hidden = $('which').value !== 'other';
+    $('otherHelp').hidden = $('which').value !== 'other';
     const cal = $('which').value === 'other' ? $('other').value.trim() : (me ? me.email : '');
     const opts = {cal: cal, name: $('name').value.trim(), view: $('view').value, days: $('days5').checked ? 5 : 7, hide: $('hide').checked, theme: $('dark').checked ? 'dark' : 'light'};
     const ready = !!(me && cal);
