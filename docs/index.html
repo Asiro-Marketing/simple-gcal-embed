@@ -10,73 +10,104 @@
   [hidden] { display:none !important; }
   body { margin:0; background:var(--bg); color:var(--fg);
     font:14px/1.7 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif; }
-  main { max-width:760px; margin:0 auto; padding:40px 16px 64px; }
+  main { max-width:780px; margin:0 auto; padding:40px 16px 64px; }
   h1 { font-size:26px; margin:0 0 6px; }
   .lead { color:var(--sub); margin:0 0 28px; }
   section { border:1px solid var(--line); border-radius:8px; padding:18px 20px; margin-bottom:16px; }
   h2 { font-size:15px; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
-  h2 .n { display:inline-flex; width:22px; height:22px; border-radius:50%; background:var(--fg); color:#fff; font-size:12px; align-items:center; justify-content:center; }
+  h2 .n { display:inline-flex; width:22px; height:22px; border-radius:50%; background:var(--fg); color:#fff; font-size:12px; align-items:center; justify-content:center; flex:0 0 auto; }
   .gbtn { font:inherit; background:#fff; color:#3c4043; border:1px solid #dadce0; border-radius:20px; padding:8px 18px; font-weight:600; display:inline-flex; align-items:center; gap:10px; cursor:pointer; }
   .gbtn:hover { background:#f8f9fa; }
   .me { color:var(--sub); }
   .me b { color:var(--fg); }
   .link { font:inherit; background:none; border:0; color:var(--sub); text-decoration:underline; cursor:pointer; padding:0; }
-  label.row { display:flex; align-items:center; gap:10px; margin:8px 0; }
-  .row .k { flex:0 0 7em; color:var(--sub); }
-  input[type=text] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; width:100%; max-width:360px; }
-  select { font:inherit; padding:5px 8px; border:1px solid var(--line); border-radius:6px; }
+  label.row, .row { display:flex; align-items:center; gap:10px; margin:8px 0; flex-wrap:wrap; }
+  .row .k { flex:0 0 8.5em; color:var(--sub); }
+  input[type=text] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; width:100%; max-width:340px; }
+  select { font:inherit; padding:5px 8px; border:1px solid var(--line); border-radius:6px; max-width:100%; }
+  input[type=color] { width:36px; height:30px; padding:0 2px; border:1px solid var(--line); border-radius:6px; background:#fff; }
   .checks label { display:block; margin:6px 0; }
-  .out { display:flex; gap:8px; }
+  .cal { display:grid; grid-template-columns: 1fr 9em auto auto; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); }
+  .cal .cid { grid-column:1 / -1; }
+  .cal small { color:var(--sub); white-space:nowrap; }
+  .out { display:flex; gap:8px; margin:4px 0 2px; }
   .out input { flex:1; max-width:none; background:var(--soft); }
   .btn { font:inherit; background:var(--fg); color:#fff; border:0; border-radius:6px; padding:6px 14px; cursor:pointer; white-space:nowrap; }
+  .btn.sub { background:var(--soft); color:var(--fg); border:1px solid var(--line); }
   .btn:disabled { opacity:.4; cursor:default; }
   .preview { margin-top:14px; border:1px solid var(--line); border-radius:6px; overflow:hidden; height:520px; resize:vertical; }
   .preview iframe { width:100%; height:100%; border:0; display:block; }
   ol { margin:8px 0 0; padding-left:1.4em; }
+  table { width:100%; border-collapse:collapse; }
+  td { padding:6px 4px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  td.act { text-align:right; white-space:nowrap; }
+  td.act button { margin-left:4px; }
+  tr.editing td:first-child { font-weight:600; }
   .notes { background:var(--soft); border:0; }
   .notes ul { margin:0; padding-left:1.2em; color:var(--sub); }
   .err { color:#d44c47; }
+  .ok { color:#0f7b6c; }
   .muted { color:var(--sub); font-size:12px; }
+  @media (max-width: 560px) { .cal { grid-template-columns: 1fr auto auto; } .cal .lab { grid-column:1 / -1; } }
 </style>
 </head>
 <body>
 <main>
   <h1>Google カレンダーを埋め込む</h1>
-  <p class="lead">自分の Google カレンダーを、Notion や社内のページに時間割として出せます。このページでリンクか埋め込みコードを作り、貼るだけです。どこにも登録はされません。</p>
+  <p class="lead">自分の Google カレンダーを、Notion や社内のページに時間割として出せます。いくつかのカレンダーを重ねて、色分けして出すこともできます。</p>
 
   <section>
     <h2><span class="n">1</span>会社の Google アカウントでログイン</h2>
     <div id="login"></div>
-    <p class="muted">初めてログインすると、Google から「カレンダーの予定を見る」と「メールアドレス・名前を見る」の許可を求められます。予定を作る・変える・消す許可は求めません。許可は Google アカウントの「セキュリティ」→「サードパーティ製のアプリとサービス」からいつでも取り消せます。</p>
+    <p class="muted">初めてログインすると、Google から「カレンダーの予定を見る」「カレンダーの一覧を見る」「この道具専用の保存場所（Google ドライブの中の見えない場所）を使う」「メールアドレス・名前を見る」の許可を求められます。予定を作る・変える・消す許可は求めません。許可は Google アカウントの「セキュリティ」→「サードパーティ製のアプリとサービス」からいつでも取り消せます。</p>
+  </section>
+
+  <section id="savedSec" hidden>
+    <h2>作ったリンク</h2>
+    <p class="muted">保存したリンクは、あなたの Google アカウントに残ります。別のパソコンでも、ログインすれば同じ一覧が出ます。</p>
+    <table><tbody id="saved"></tbody></table>
+    <p><button class="btn sub" id="newLink">＋ 新しいリンクを作る</button></p>
   </section>
 
   <section>
-    <h2><span class="n">2</span>表示のしかたを選ぶ</h2>
-    <label class="row"><span class="k">表示名</span><input type="text" id="name" maxlength="30" placeholder="枠の左上に出る名前（例：山根）"></label>
-    <label class="row"><span class="k">カレンダー</span>
-      <select id="which"><option value="me">自分のカレンダー</option><option value="other">ほかのカレンダー（チームの共有カレンダーなど）</option></select>
-    </label>
-    <label class="row" id="otherRow" hidden><span class="k">カレンダーID</span><input type="text" id="other" placeholder="例：xxxx@group.calendar.google.com"></label>
-    <p class="muted" id="otherHelp" hidden>Google カレンダーの左の一覧でカレンダー名の右の「︙」→「設定と共有」→ 下のほうの「カレンダーの統合」にある「カレンダー ID」を貼ります。見る人がそのカレンダーを見る権限を持っていないと、予定は出ません。</p>
+    <h2><span class="n">2</span>出すカレンダーを選ぶ</h2>
+    <p class="muted">一覧には、あなたが Google カレンダーで見ているカレンダー（自分・同僚・共有カレンダー）が出ます。色は自由に選べます。「予定の色」に印を付けると、Google カレンダーで予定ごとに付けた色のまま出します。</p>
+    <div id="cals"></div>
+    <p><button class="btn sub" id="addCal">＋ カレンダーを足す</button></p>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>表示のしかたを選ぶ</h2>
+    <label class="row"><span class="k">枠の名前</span><input type="text" id="title" maxlength="40" placeholder="枠の左上に出る名前（例：山根の予定）"></label>
     <label class="row"><span class="k">表示</span>
-      <select id="view"><option value="auto">自動（貼った枠が広ければ週、狭ければ日）</option><option value="week">週</option><option value="day">日</option></select>
+      <select id="view"><option value="auto">自動（貼った枠が広ければ週、狭ければ日）</option><option value="week">週</option><option value="day">日</option><option value="month">月</option><option value="list">予定リスト（今日から2週間）</option></select>
+    </label>
+    <label class="row"><span class="k">週の始まり</span><select id="ws"><option value="mon">月曜日</option><option value="sun">日曜日</option></select></label>
+    <div class="row"><span class="k">表示する時間帯</span>
+      <select id="h0"></select><span>時から</span><select id="h1"></select><span>時まで</span>
+    </div>
+    <label class="row"><span class="k">色</span>
+      <select id="theme"><option value="light">明るい色</option><option value="dark">暗い色</option><option value="system">見る人の端末の設定に合わせる</option></select>
     </label>
     <div class="checks">
+      <label><input type="checkbox" id="allday" checked> 終日の予定（「在宅勤務」など）を出す</label>
       <label><input type="checkbox" id="days5"> 土日を出さない</label>
       <label><input type="checkbox" id="hide"> 予定名を隠して「予定あり」とだけ出す（この枠を見る全員に対して。Google カレンダーの共有設定は変わりません）</label>
-      <label><input type="checkbox" id="dark"> 暗い色で出す（貼る先の背景が暗いとき）</label>
+      <label><input type="checkbox" id="clear"> 背景を透明にする（貼る先の背景の色を生かしたいとき）</label>
+      <label><input type="checkbox" id="nav" checked> 上の切り替えボタン（‹ 今日 › と 週・日・月・リスト）を出す</label>
     </div>
   </section>
 
   <section>
-    <h2><span class="n">3</span>リンクか埋め込みコードをコピーして貼る</h2>
+    <h2><span class="n">4</span>保存して、リンクか埋め込みコードを貼る</h2>
+    <p><button class="btn" id="save" disabled>このリンクを保存</button> <span id="saveMsg" class="muted"></span></p>
     <p class="muted">Notion に貼るとき：リンク</p>
     <div class="out"><input type="text" id="url" readonly placeholder="ログインするとリンクができます"><button class="btn" id="copy" data-src="url" disabled>コピー</button></div>
     <ol>
       <li>Notion のページで「/埋め込み」（英語なら /embed）と入力して選ぶ</li>
       <li>コピーしたリンクを貼り、「リンクを埋め込む」を押す</li>
       <li>枠の右下の角を下へドラッグし、朝9時から夕方6時くらいまでが見える高さにする（下の見本の枠と同じくらい）</li>
-      <li>Notion のアプリ（パソコン・スマホ）では「Google でログイン」を押しても進まないことがあります。そのときは Chrome などのブラウザで Notion を開いてください</li>
+      <li>Notion のパソコン用アプリやスマホでは、ログインの小窓が開かないことがあります。そのときは枠の中の「ブラウザで開く」を押すか、ブラウザで Notion を開いてください</li>
     </ol>
     <p class="muted" style="margin-top:14px">ほかのサイト（Google サイト・WordPress など）に貼るとき：埋め込みコード。サイトの「埋め込み」や「HTML を追加」の欄に貼ります</p>
     <div class="out"><input type="text" id="code" readonly placeholder="ログインすると埋め込みコードができます"><button class="btn" id="copy2" data-src="code" disabled>コピー</button></div>
@@ -88,10 +119,10 @@
     <h2>知っておくこと</h2>
     <ul>
       <li>枠を見る人も、会社の Google アカウントでログインします。ログインは1時間で切れ、切れると枠に「Google でログイン」のボタンが出ます。押すとまた予定が出ます。ページを開いた人がそれぞれ自分で押します。</li>
-      <li>見る人に見えるのは、その人が Google カレンダーであなたのカレンダーを開いたときと同じ中身だけです。社内の人に予定名まで見せているか、時間帯だけかは、Google カレンダーの「設定」→ 左の自分の名前 →「予定のアクセス権限」で確かめられます。</li>
+      <li>見る人に見えるのは、その人が Google カレンダーでそのカレンダーを開いたときと同じ中身だけです。見る権限が無いカレンダーは、枠の上に「見る権限なし」と出ます。社内の人に予定名まで見せているか、時間帯だけかは、Google カレンダーの「設定」→ 左の自分の名前 →「予定のアクセス権限」で確かめられます。</li>
       <li>予定ごとに「非公開」にした予定は、あなた自身が見ても「予定あり」とだけ出ます。見せたくない予定は Google カレンダーで「非公開」にしてください。</li>
       <li>リンクを社外の人に渡されても、会社のアカウントでログインできない人には何も出ません。予定は Google から見る人の画面へ直接届き、ほかの場所には保存されません。</li>
-      <li>やめるときは、貼った埋め込みを消すだけです。気になる場合は、上の手順で Google の許可も取り消してください。</li>
+      <li>保存したリンクを消しても、すでに貼った枠は消えません。やめるときは、貼った埋め込みを消してください。</li>
     </ul>
   </section>
 </main>
@@ -102,35 +133,43 @@
 <script>
 (function () {
   const $ = function (id) { return document.getElementById(id); };
-  let me = null;
   const base = new URL('widget.html', location.href).href;
+  const PALETTE = ['#039be5', '#e67c73', '#33b679', '#8e24aa', '#f6bf26', '#3f51b5', '#f4511e', '#0b8043', '#616161', '#d50000'];
+  let me = null, myCals = [], links = [], editing = null;
+  let rows = [];
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  // 時間帯の選択肢（自動＝8〜20時を基本に予定に合わせて広げる）
+  (function () {
+    const a = $('h0'), b = $('h1');
+    a.appendChild(new Option('自動', ''));
+    b.appendChild(new Option('自動', ''));
+    for (let h = 0; h <= 23; h++) a.appendChild(new Option(String(h), String(h)));
+    for (let h = 1; h <= 24; h++) b.appendChild(new Option(String(h), String(h)));
+  })();
 
   function drawLogin(msg) {
     const box = $('login');
     box.innerHTML = '';
     if (me) {
-      const p = document.createElement('div');
-      p.className = 'me';
+      const p = el('div', 'me');
       p.innerHTML = 'ログイン中：<b></b>　';
       p.querySelector('b').textContent = me.email;
-      const out = document.createElement('button');
-      out.className = 'link'; out.textContent = 'ログアウト';
-      out.onclick = function () { NCW.logout(); me = null; drawLogin(); update(); };
+      const out = el('button', 'link', 'ログアウト');
+      out.onclick = function () { NCW.logout(); me = null; links = []; drawLogin(); drawSaved(); update(); };
       p.appendChild(out);
       box.appendChild(p);
       return;
     }
-    const b = document.createElement('button');
-    b.className = 'gbtn';
+    const b = el('button', 'gbtn');
     b.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.4 0-11.7-4.1-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg><span>Google でログイン</span>';
-    b.onclick = function () {
-      NCW.login().then(whoami).catch(function (e) { drawLogin(e.message); });
-    };
+    b.onclick = function () { NCW.login().then(start).catch(function (e) { drawLogin(e.message); }); };
     box.appendChild(b);
-    if (msg) { const e = document.createElement('p'); e.className = 'err'; e.textContent = msg; box.appendChild(e); }
+    if (msg) box.appendChild(el('p', 'err', msg));
   }
 
-  async function whoami() {
+  async function start() {
     try {
       const u = await NCW.me();
       if (!u.email || !u.email.endsWith('@' + NCW.DOMAIN)) {
@@ -138,46 +177,178 @@
         return drawLogin('会社のアカウント（@' + NCW.DOMAIN + '）でログインしてください。');
       }
       me = u;
-      if (!$('name').value) $('name').value = (u.family_name || u.name || u.email.split('@')[0]).trim();
       drawLogin();
+      myCals = await NCW.calendars().catch(function () { return []; });
+      links = await NCW.loadLinks().catch(function () { return []; });
+      drawSaved();
+      if (!rows.length || rows.every(function (r) { return !r.id; })) resetForm();
+      else drawCals();
       update();
     } catch (e) {
       drawLogin(e.code === 401 ? '' : e.message);
     }
   }
 
+  function myName() { return me ? (me.family_name || (me.name || '').split(' ')[0] || me.email.split('@')[0]) : ''; }
+
+  function resetForm() {
+    editing = null;
+    rows = [{id: me ? me.email : '', label: myName(), color: 'auto'}];
+    $('title').value = me ? myName() + 'の予定' : '';
+    $('view').value = 'auto'; $('ws').value = 'mon'; $('h0').value = ''; $('h1').value = ''; $('theme').value = 'light';
+    $('allday').checked = true; $('days5').checked = false; $('hide').checked = false; $('clear').checked = false; $('nav').checked = true;
+    drawCals(); drawSaved(); update();
+  }
+
+  function fillForm(o) {
+    rows = o.cals.map(function (c) { return {id: c.id, label: c.label, color: c.color}; });
+    $('title').value = o.title;
+    $('view').value = o.view; $('ws').value = o.sunday ? 'sun' : 'mon';
+    $('h0').value = o.hours ? String(o.hours[0]) : ''; $('h1').value = o.hours ? String(o.hours[1]) : '';
+    $('theme').value = o.theme; $('allday').checked = o.allday; $('days5').checked = o.days === 5;
+    $('hide').checked = o.hide; $('clear').checked = o.clear; $('nav').checked = o.nav;
+    drawCals(); update();
+  }
+
+  function drawCals() {
+    const box = $('cals');
+    box.innerHTML = '';
+    $('addCal').hidden = !me;
+    if (!me) { box.appendChild(el('p', 'muted', 'ログインすると、あなたのカレンダーの一覧から選べます。')); return; }
+    rows.forEach(function (r, i) {
+      const row = el('div', 'cal');
+      const sel = el('select');
+      myCals.forEach(function (c) { sel.appendChild(new Option(c.name + (c.primary ? '（自分）' : ''), c.id)); });
+      sel.appendChild(new Option('ID を入れて指定する', '__other'));
+      const known = myCals.some(function (c) { return c.id === r.id; });
+      sel.value = known ? r.id : '__other';
+      const cid = el('input', 'cid'); cid.type = 'text'; cid.placeholder = 'カレンダー ID（例：xxxx@group.calendar.google.com や 同僚のメールアドレス）';
+      cid.value = known ? '' : r.id; cid.hidden = known;
+      const lab = el('input', 'lab'); lab.type = 'text'; lab.placeholder = '凡例の名前'; lab.value = r.label || '';
+      const colorWrap = el('span');
+      const col = el('input'); col.type = 'color'; col.value = r.color !== 'auto' ? r.color : (known ? (myCals.find(function (c) { return c.id === r.id; }).color) : PALETTE[i % PALETTE.length]);
+      const autoLab = el('small'); const auto = el('input'); auto.type = 'checkbox'; auto.checked = r.color === 'auto';
+      autoLab.appendChild(auto); autoLab.appendChild(document.createTextNode(' 予定の色'));
+      col.disabled = auto.checked;
+      colorWrap.appendChild(col); colorWrap.appendChild(document.createTextNode(' ')); colorWrap.appendChild(autoLab);
+      const del = el('button', 'link', '外す'); del.hidden = rows.length === 1;
+      sel.onchange = function () {
+        if (sel.value === '__other') { r.id = cid.value.trim(); cid.hidden = false; }
+        else {
+          const c = myCals.find(function (x) { return x.id === sel.value; });
+          r.id = c.id; cid.hidden = true;
+          if (!lab.value || lab.dataset.auto === '1') { lab.value = c.primary ? myName() : c.name; lab.dataset.auto = '1'; r.label = lab.value; }
+          if (r.color !== 'auto') { col.value = c.color; r.color = c.color; }
+        }
+        update();
+      };
+      cid.oninput = function () { r.id = cid.value.trim(); update(); };
+      lab.oninput = function () { r.label = lab.value.trim(); lab.dataset.auto = ''; update(); };
+      col.oninput = function () { r.color = col.value; update(); };
+      auto.onchange = function () { r.color = auto.checked ? 'auto' : col.value; col.disabled = auto.checked; update(); };
+      del.onclick = function () { rows.splice(i, 1); drawCals(); update(); };
+      row.appendChild(sel); row.appendChild(lab); row.appendChild(colorWrap); row.appendChild(del); row.appendChild(cid);
+      box.appendChild(row);
+    });
+  }
+
+  $('addCal').onclick = function () {
+    const used = rows.map(function (r) { return r.id; });
+    const next = myCals.find(function (c) { return used.indexOf(c.id) < 0; });
+    rows.push(next ? {id: next.id, label: next.name, color: next.color} : {id: '', label: '', color: PALETTE[rows.length % PALETTE.length]});
+    drawCals(); update();
+  };
+
+  function opts() {
+    const h0 = $('h0').value, h1 = $('h1').value;
+    return {
+      cals: rows.filter(function (r) { return r.id; }).map(function (r) { return {id: r.id, color: r.color, label: r.label}; }),
+      title: $('title').value.trim(), view: $('view').value, sunday: $('ws').value === 'sun',
+      days: $('days5').checked ? 5 : 7,
+      hours: h0 !== '' && h1 !== '' && +h0 < +h1 ? [+h0, +h1] : null,
+      allday: $('allday').checked, hide: $('hide').checked, theme: $('theme').value, clear: $('clear').checked, nav: $('nav').checked,
+    };
+  }
+
   function update() {
-    $('otherRow').hidden = $('which').value !== 'other';
-    $('otherHelp').hidden = $('which').value !== 'other';
-    const cal = $('which').value === 'other' ? $('other').value.trim() : (me ? me.email : '');
-    const opts = {cal: cal, name: $('name').value.trim(), view: $('view').value, days: $('days5').checked ? 5 : 7, hide: $('hide').checked, theme: $('dark').checked ? 'dark' : 'light'};
-    const ready = !!(me && cal);
-    const link = ready ? base + NCW.makeHash(opts) : '';
+    const o = opts();
+    const ready = !!(me && o.cals.length);
+    const link = ready ? base + NCW.makeHash(o) : '';
     $('url').value = link;
-    $('code').value = ready ? '<iframe src="' + link.replace(/"/g, '&quot;') + '" title="' + (opts.name || 'カレンダー').replace(/[<>"&]/g, '') + ' の予定" style="width:100%;height:600px;border:0"></iframe>' : '';
-    $('copy').disabled = $('copy2').disabled = !ready;
-    const pv = ready ? base + NCW.makeHash(opts) : base + NCW.makeHash(Object.assign({}, opts, {cal: opts.cal || 'sample', name: opts.name || '見本'})) + '&demo=1';
+    $('code').value = ready ? '<iframe src="' + link.replace(/"/g, '&quot;') + '" title="' + (o.title || 'カレンダー').replace(/[<>"&]/g, '') + '" style="width:100%;height:600px;border:0"></iframe>' : '';
+    $('copy').disabled = $('copy2').disabled = $('save').disabled = !ready;
+    $('save').textContent = editing ? '保存し直す' : 'このリンクを保存';
+    const demo = Object.assign({}, o, {demo: true});
+    if (!demo.cals.length) demo.cals = [{id: 'sample', color: 'auto', label: '見本'}];
+    const pv = ready ? link : base + NCW.makeHash(demo);
     if ($('pv').src !== pv) $('pv').src = pv;
     $('pvnote').hidden = ready;
   }
 
-  ['name', 'which', 'other', 'view', 'days5', 'hide', 'dark'].forEach(function (id) {
+  function drawSaved() {
+    $('savedSec').hidden = !me;
+    const tb = $('saved');
+    tb.innerHTML = '';
+    if (!links.length) { const tr = el('tr'); tr.appendChild(el('td', 'muted', 'まだ保存したリンクはありません。下で作って「このリンクを保存」を押すと、ここに並びます。')); tb.appendChild(tr); return; }
+    links.forEach(function (l) {
+      const tr = el('tr', editing === l.id ? 'editing' : '');
+      tr.appendChild(el('td', '', l.name));
+      const td = el('td', 'act');
+      const open = el('button', 'btn sub', '開いて直す');
+      open.onclick = function () { editing = l.id; fillForm(NCW.readHash(l.hash)); drawSaved(); window.scrollTo({top: $('cals').offsetTop - 80, behavior: 'smooth'}); };
+      const cp = el('button', 'btn sub', 'リンクをコピー');
+      cp.onclick = function () { copy(base + l.hash, cp); };
+      const del = el('button', 'link', '一覧から消す');
+      del.onclick = async function () {
+        if (!confirm('「' + l.name + '」を一覧から消しますか？（貼った枠はそのまま残ります）')) return;
+        links = links.filter(function (x) { return x.id !== l.id; });
+        if (editing === l.id) editing = null;
+        await NCW.saveLinks(links).catch(function (e) { alert(e.message); });
+        drawSaved(); update();
+      };
+      td.appendChild(open); td.appendChild(cp); td.appendChild(del);
+      tr.appendChild(td);
+      tb.appendChild(tr);
+    });
+  }
+
+  $('save').onclick = async function () {
+    const o = opts();
+    const name = o.title || (o.cals[0] && (o.cals[0].label || o.cals[0].id)) || 'カレンダー';
+    const hash = NCW.makeHash(o);
+    if (editing) links = links.map(function (l) { return l.id === editing ? Object.assign({}, l, {name: name, hash: hash, at: new Date().toISOString()}) : l; });
+    else { editing = 'l' + Date.now().toString(36); links.push({id: editing, name: name, hash: hash, at: new Date().toISOString()}); }
+    $('saveMsg').textContent = '保存しています…'; $('saveMsg').className = 'muted';
+    try {
+      await NCW.saveLinks(links);
+      $('saveMsg').textContent = '保存しました（上の「作ったリンク」に並びます）'; $('saveMsg').className = 'ok';
+    } catch (e) {
+      $('saveMsg').textContent = e.code === 401 ? 'ログインが切れました。上の「Google でログイン」を押してから、もう一度保存してください。' : '保存できませんでした：' + e.message;
+      $('saveMsg').className = 'err';
+      if (e.code === 401) { me = null; drawLogin(); }
+    }
+    drawSaved(); update();
+  };
+  $('newLink').onclick = function () { resetForm(); window.scrollTo({top: $('cals').offsetTop - 80, behavior: 'smooth'}); };
+
+  function copy(text, btn) {
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).catch(function () {
+      const t = el('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+    });
+    const old = btn.textContent; btn.textContent = 'コピーしました';
+    setTimeout(function () { btn.textContent = old; }, 1500);
+  }
+  ['copy', 'copy2'].forEach(function (id) { $(id).onclick = function () { copy($($(id).dataset.src).value, $(id)); }; });
+  ['title', 'view', 'ws', 'h0', 'h1', 'theme', 'allday', 'days5', 'hide', 'clear', 'nav'].forEach(function (id) {
     $(id).addEventListener('input', update);
     $(id).addEventListener('change', update);
   });
-  ['copy', 'copy2'].forEach(function (id) {
-    $(id).onclick = function () {
-      const t = $($(id).dataset.src);
-      t.select();
-      (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).catch(function () { document.execCommand('copy'); });
-      $(id).textContent = 'コピーしました';
-      setTimeout(function () { $(id).textContent = 'コピー'; }, 1500);
-    };
-  });
 
   drawLogin();
+  rows = [{id: '', label: '', color: 'auto'}];
+  drawCals();
   update();
-  NCW.ready.then(function () { if (NCW.loggedIn()) whoami(); });
+  NCW.ready.then(function () { if (NCW.loggedIn()) start(); });
 })();
 </script>
 </body>

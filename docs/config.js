@@ -3,5 +3,5 @@
 window.NCW = {
   CLIENT_ID: '680703265492-fsirsj6o4in3io7d95ii4cv2u93q8dsp.apps.googleusercontent.com',
   DOMAIN: 'asiro.co.jp',
-  SCOPES: 'openid email profile https://www.googleapis.com/auth/calendar.events.readonly',
+  SCOPES: 'openid email profile https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/drive.appdata',
 };
