@@ -129,20 +129,23 @@
     return [w, w + 7 * DAY];
   }
 
+  const IN_APP = /Electron|Notion\//i.test(navigator.userAgent);
   function loginCard(message, blocked) {
+    if (IN_APP) blocked = true;
     app.innerHTML = '';
     const c = el('div', 'card');
     c.appendChild(el('h1', '', label() || 'カレンダー'));
     c.appendChild(el('p', '', '会社の Google アカウントでログインすると表示されます。'));
     const b = el('button', 'gbtn');
     b.innerHTML = '<svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.5 2.2-6.4 0-11.7-4.1-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg><span>Google でログインして表示</span>';
+    if (IN_APP) b.hidden = true;
     b.onclick = function () { NCW.login().then(function () { load(true); }).catch(function (e) { loginCard(e.message, e.type === 'popup_failed_to_open'); }); };
     c.appendChild(b);
     c.appendChild(el('div', 'note', '一度ログインすると、1時間は押さずに表示されます。'));
     if (message) c.appendChild(el('div', 'err', message));
     if (blocked) {
       // 埋め込み先が小窓を止めているとき（Notion のパソコン用アプリなど）は、ブラウザで開いてもらう
-      c.appendChild(el('p', 'note', 'この画面の中ではログインの小窓を開けません。下のボタンからブラウザで開くか、ブラウザで Notion などを開いてください。'));
+      c.appendChild(el('p', 'note', IN_APP ? 'Notion のアプリの中では、Google のログインができません。下のボタンでブラウザで開くか、ブラウザで Notion を開くと見られます。' : 'この画面の中ではログインの小窓を開けません。下のボタンからブラウザで開くか、ブラウザで Notion などを開いてください。'));
       const a = el('a', 'gbtn', 'ブラウザで開く');
       a.href = location.href; a.target = '_blank'; a.rel = 'noopener'; a.style.textDecoration = 'none';
       c.appendChild(a);

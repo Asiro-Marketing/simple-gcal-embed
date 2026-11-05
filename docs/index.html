@@ -168,8 +168,8 @@
     <div class="card" id="thisCard" hidden>
       <div class="state" id="state"></div>
       <div class="field" style="margin-bottom:0"><span class="lab">リンクの名前</span>
-        <input type="text" id="lname" maxlength="40" placeholder="例：上司用・今週の予定">
-        <div class="help">保存したリンクの一覧に出す名前です。枠には出ません。</div>
+        <input type="text" id="lname" maxlength="40" placeholder="例：上司用・今週の予定（空欄ならリンク1・リンク2…）">
+        <div class="help">保存したリンクの一覧に出す名前です。最初は「リンク1」のような番号で、自由に変えられます。枠には出ません。</div>
       </div>
     </div>
 
@@ -330,6 +330,11 @@
   }
   function myName() { return me ? (me.family_name || (me.name || '').split(' ')[0] || me.email.split('@')[0]) : ''; }
 
+  function nextName() {
+    let n = 0;
+    links.forEach(function (l) { const m = /^リンク(\d+)$/.exec(l.name || ''); if (m) n = Math.max(n, +m[1]); });
+    return 'リンク' + Math.max(n + 1, links.length + 1);
+  }
   function openLink(l) {
     editing = l.id; savedHash = l.hash; savedName = l.name;
     $('lname').value = l.name;
@@ -337,7 +342,7 @@
   }
   function resetForm() {
     editing = null; savedHash = null; savedName = '';
-    $('lname').value = '';
+    $('lname').value = nextName();
     rows = [{id: me ? me.email : '', label: myName(), color: 'auto'}];
     setSeg('view', 'auto'); setSeg('hours', 'auto'); setSeg('ws', 'mon'); setSeg('theme', 'light');
     $('weekend').checked = true; $('allday').checked = true; $('hide').checked = false; $('clear').checked = false; $('nav').checked = true;
@@ -491,7 +496,7 @@
 
   $('save').onclick = async function () {
     const o = opts();
-    const name = $('lname').value.trim() || nameOf(o), hash = NCW.makeHash(o), at = new Date().toISOString();
+    const name = $('lname').value.trim() || nextName(), hash = NCW.makeHash(o), at = new Date().toISOString();
     const before = links.slice();
     if (editing && links.some(function (l) { return l.id === editing; })) links = links.map(function (l) { return l.id === editing ? Object.assign({}, l, {name: name, hash: hash, at: at}) : l; });
     else { editing = 'l' + Date.now().toString(36); links.push({id: editing, name: name, hash: hash, at: at}); }
