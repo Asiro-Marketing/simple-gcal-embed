@@ -3,7 +3,7 @@
 自分の Google カレンダーを、Notion や社内のページに時間割として出す道具です。
 リンクを作るページでリンクか埋め込みコードを作り、貼るだけで使えます。どこにも登録はされません。
 
-- リンクを作るページ：（置き場所が決まったらここに URL を書く）
+- リンクを作るページ：https://asiro-marketing.github.io/simple-gcal-embed/
 - 作る人も見る人も、会社の Google アカウント（@asiro.co.jp）でログインします
 
 ## 使い方（3分）
@@ -35,7 +35,8 @@ Notion のアプリ（パソコン・スマホ）では「Google でログイン
 
 ## 仕組み（管理する人向け）
 
-- 画面のファイル（HTML と JavaScript）だけで動き、サーバーはありません
+- 画面のファイル（HTML と JavaScript）だけで動き、サーバーはありません。画面は GitHub Pages（このリポジトリの `docs/`）で配っています
+- ログイン用の設定（OAuth クライアント）は、会社の Google Cloud のプロジェクト「Simple Google Calendar Embed」（ID：asiro-calendar-embed）にあります。管理者が1人だけにならないようにしてください
 - ログインは Google Identity Services のトークン方式です。権限は `calendar.events.readonly`（予定を読むだけ）と、メールアドレス・名前です
 - 予定は、ブラウザから Google カレンダー API を見る人のトークンで直接読みます
 - 会社の Google の設定では、ログインなしで見られるページ（GAS の「全員」公開）を管理者が止めています。このため、見る人にもログインしてもらう作りにしています
@@ -54,7 +55,7 @@ Notion のアプリ（パソコン・スマホ）では「Google でログイン
 
 1. Google Cloud のコンソールでプロジェクトを選び、「Google Calendar API」を有効にする
 2. 「Google Auth Platform」で、対象（ユーザーの種類）を「内部」にする。会社のアカウントだけがログインできるようになる
-3. 「クライアント」で「ウェブ アプリケーション」を作り、承認済みの JavaScript 生成元に、画面を置いた場所の URL と `http://localhost:8765`（手元で確かめる用）を入れる
+3. 「クライアント」で「ウェブ アプリケーション」を作り、承認済みの JavaScript 生成元に `https://asiro-marketing.github.io` と `http://localhost:8765`（手元で確かめる用）を入れる
 4. できたクライアント ID を `docs/config.js` の `CLIENT_ID` に入れる
 
 ### 手元で確かめる
