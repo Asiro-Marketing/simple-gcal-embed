@@ -80,6 +80,28 @@
   .pill:hover { border-color:#c9c8c4; }
   .pill.on { border-color:var(--acc); background:var(--accs); color:var(--acc); font-weight:600; }
   .pill.new { color:var(--sub); border-style:dashed; }
+  .lhead { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .lhead h2 { margin:0; }
+  .btn.sm { padding:4px 10px; font-size:12px; }
+  .lrow { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; cursor:pointer; border:1px solid transparent; }
+  .lrow:hover { background:var(--soft); }
+  .lrow.on { border-color:var(--acc); background:var(--accs); }
+  .lrow .grow { flex:1; min-width:0; }
+  .lrow .nm { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lrow .meta { color:var(--sub); font-size:12px; }
+  .lrow .badge { font-size:11px; color:var(--acc); font-weight:600; margin-left:6px; }
+  .lrow .del { border:0; background:transparent; color:var(--sub); cursor:pointer; font-size:12px; padding:4px; }
+  .lrow .del:hover { color:var(--ng); }
+  .state { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px; margin-bottom:4px; }
+  .tag { padding:2px 9px; border-radius:999px; font-size:12px; font-weight:600; }
+  .tag.new { background:var(--soft); color:var(--sub); }
+  .tag.saved { background:#e6f4f1; color:var(--ok); }
+  .tag.dirty { background:#fdf0e1; color:#b7650c; }
+  .guide { list-style:none; counter-reset:g; margin:6px 0 0; padding:0; }
+  .guide li { counter-increment:g; position:relative; padding:8px 0 8px 36px; border-top:1px solid var(--soft); }
+  .guide li:first-child { border-top:0; }
+  .guide li::before { content:counter(g); position:absolute; left:0; top:8px; width:24px; height:24px; border-radius:50%; background:var(--acc); color:#fff; font-size:12px; font-weight:700; display:grid; place-items:center; }
+  .guide li span { display:block; color:var(--sub); font-size:12px; }
   /* 右：見え方 */
   .pv-col { position:sticky; top:72px; align-self:start; }
   .pvbar { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
@@ -129,12 +151,26 @@
       <h1>カレンダーを、どこにでも貼れる枠に</h1>
       <p>自分やチームの Google カレンダーを、Notion や社内のページに時間割として出せます。会社のアカウントでログインして、左で選び、右の見え方を確かめて保存するだけです。</p>
       <div id="loginBig"></div>
-      <p class="muted" style="margin-top:12px">ログインのとき、Google から「カレンダーの予定と一覧を見る」「この道具専用の保存場所を使う」「メールアドレス・名前を見る」の許可を求められます。予定を作る・変える・消す許可は求めません。</p>
+      <ol class="guide" id="guide" hidden>
+        <li><b>左でカレンダーを選ぶ</b><span>最初は自分のカレンダーが入っています。チームのカレンダーも重ねられます</span></li>
+        <li><b>右で見え方を確かめる</b><span>表示やデザインを変えると、右の見え方がすぐ変わります。迷ったらそのままで大丈夫です</span></li>
+        <li><b>右上の「保存」→「リンクをコピー」</b><span>Notion のページで「/埋め込み」と入力して貼ります</span></li>
+      </ol>
+      <p class="muted" id="perm" style="margin-top:12px">ログインのとき、Google から「カレンダーの予定と一覧を見る」「この道具専用の保存場所を使う」「メールアドレス・名前を見る」の許可を求められます。予定を作る・変える・消す許可は求めません。</p>
     </div>
 
     <div class="card" id="linksCard" hidden>
-      <h2>作ったリンク</h2>
-      <div class="links" id="links"></div>
+      <div class="lhead"><h2 id="linksTitle">保存したリンク</h2><button class="btn sm" id="newLink">＋ 新しく作る</button></div>
+      <div class="muted" style="margin:0 2px 6px">押すと、そのリンクの設定が開きます。</div>
+      <div id="links"></div>
+    </div>
+
+    <div class="card" id="thisCard" hidden>
+      <div class="state" id="state"></div>
+      <div class="field" style="margin-bottom:0"><span class="lab">リンクの名前</span>
+        <input type="text" id="lname" maxlength="40" placeholder="例：上司用・今週の予定">
+        <div class="help">保存したリンクの一覧に出す名前です。枠には出ません。</div>
+      </div>
     </div>
 
     <div class="card" id="calCard" hidden>
@@ -228,7 +264,8 @@
     hours: {auto: '8〜20時を基本に、早い・遅い予定があれば広げます', '9-18': '9時〜18時だけを出します', '8-20': '8時〜20時だけを出します', '0-24': '1日の全部を出します（枠の中でスクロール）', custom: '出す時間を選びます'},
     theme: {light: '白い背景のページ向け', dark: '黒い背景のページ向け（Notion のダークモードなど）', system: '見る人のパソコン・スマホがライトかダークかに合わせて切り替えます'},
   };
-  let me = null, myCals = [], links = [], editing = null, rows = [];
+  let me = null, myCals = [], links = [], editing = null, rows = [], savedHash = null, savedName = '';
+  const DEMO = new URLSearchParams(location.search).get('demo') === '1'; // ログインせずに画面を確かめる用
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function toast(t) { const x = $('toast'); x.textContent = t; x.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(function () { x.classList.remove('show'); }, 1600); }
@@ -259,15 +296,21 @@
   function drawLogin(msg) {
     const top = $('login'), big = $('loginBig');
     top.innerHTML = ''; big.innerHTML = '';
-    $('linksCard').hidden = !me;
+    // 初めての人（保存したリンクが無い人）には手順を、2回目からは保存したリンクの一覧を上に出す
+    $('linksCard').hidden = !me || !links.length;
+    $('thisCard').hidden = !me;
+    $('hello').hidden = !!(me && links.length);
+    $('guide').hidden = !me;
+    $('perm').hidden = !!me;
     ['calCard', 'viewCard', 'designCard'].forEach(function (id) { $(id).hidden = false; });
     drawCals();
     if (me) {
       const c = el('span', 'chip'); c.appendChild(document.createTextNode(me.email));
       const x = el('button', 'x', 'ログアウト');
-      x.onclick = function () { NCW.logout(); me = null; links = []; editing = null; drawLogin(); update(); };
+      x.onclick = function () { NCW.logout(); me = null; links = []; editing = null; savedHash = null; drawLogin(); update(); };
       c.appendChild(x); top.appendChild(c);
-      $('hello').querySelector('h1').textContent = 'カレンダーを、どこにでも貼れる枠に';
+      $('hello').querySelector('h1').textContent = 'はじめての方へ：3つの手順で貼れます';
+      $('hello').querySelector('p').hidden = true;
       return;
     }
     big.appendChild(loginButton());
@@ -282,13 +325,19 @@
       myCals = await NCW.calendars().catch(function () { return []; });
       links = await NCW.loadLinks().catch(function () { return []; });
       drawLogin();
-      resetForm();
+      if (links.length) openLink(links[links.length - 1]); else resetForm();
     } catch (e) { drawLogin(e.code === 401 ? '' : e.message); }
   }
   function myName() { return me ? (me.family_name || (me.name || '').split(' ')[0] || me.email.split('@')[0]) : ''; }
 
+  function openLink(l) {
+    editing = l.id; savedHash = l.hash; savedName = l.name;
+    $('lname').value = l.name;
+    fillForm(NCW.readHash(l.hash));
+  }
   function resetForm() {
-    editing = null;
+    editing = null; savedHash = null; savedName = '';
+    $('lname').value = '';
     rows = [{id: me ? me.email : '', label: myName(), color: 'auto'}];
     setSeg('view', 'auto'); setSeg('hours', 'auto'); setSeg('ws', 'mon'); setSeg('theme', 'light');
     $('weekend').checked = true; $('allday').checked = true; $('hide').checked = false; $('clear').checked = false; $('nav').checked = true;
@@ -381,10 +430,21 @@
     const o = opts();
     const ready = !!(me && o.cals.length);
     ['copyLink', 'copyCode', 'save'].forEach(function (id) { $(id).disabled = !ready; });
-    $('save').textContent = editing ? '保存し直す' : '保存';
+    const hash = NCW.makeHash(o);
+    const dirty = !editing || hash !== savedHash || $('lname').value.trim() !== savedName;
+    $('save').textContent = editing ? '上書き保存' : '保存';
+    if (editing && !dirty) $('save').disabled = true;
+    const st = $('state'); st.innerHTML = '';
+    if (me) {
+      if (!editing) { st.appendChild(el('span', 'tag new', '新しいリンク')); st.appendChild(el('span', 'muted', 'まだ保存していません')); }
+      else {
+        st.appendChild(el('span', 'tag ' + (dirty ? 'dirty' : 'saved'), dirty ? '保存していない変更があります' : '保存済み'));
+        st.appendChild(el('span', 'muted', '編集中：' + savedName));
+      }
+    }
     $('frame').classList.toggle('dark', o.theme === 'dark');
     let src;
-    if (ready) src = linkOf(o);
+    if (ready) src = linkOf(DEMO ? Object.assign({}, o, {demo: true}) : o);
     else {
       const demo = Object.assign({}, o, {demo: true, cals: [{id: 'sample', color: 'auto', label: '自分'}, {id: 'team', color: '#e67c73', label: 'チーム'}]});
       src = linkOf(demo);
@@ -392,41 +452,56 @@
     if ($('pv').src !== src) $('pv').src = src;
   }
 
-  function drawLinks() {
-    const box = $('links'); box.innerHTML = '';
-    links.forEach(function (l) {
-      const b = el('button', 'pill' + (editing === l.id ? ' on' : ''), l.name);
-      b.title = 'この設定を開いて直す';
-      b.onclick = function () { editing = l.id; fillForm(NCW.readHash(l.hash)); };
-      box.appendChild(b);
-    });
-    const n = el('button', 'pill new', '＋ 新しく作る'); n.onclick = resetForm; box.appendChild(n);
-    if (editing) {
-      const del = el('button', 'pill new', 'このリンクを一覧から消す');
-      del.onclick = async function () {
-        if (!confirm('一覧から消しますか？（すでに貼った枠は消えません）')) return;
-        links = links.filter(function (x) { return x.id !== editing; });
-        await NCW.saveLinks(links).then(function () { toast('一覧から消しました'); }).catch(function (e) { showMsg(e.message, true); });
-        resetForm();
-      };
-      box.appendChild(del);
-    }
+  const VIEW_NAME = {week: '週', day: '日', month: '月', list: 'リスト', auto: '自動'};
+  function describe(l) {
+    const o = NCW.readHash(l.hash);
+    const d = l.at ? new Date(l.at) : null;
+    return VIEW_NAME[o.view] + '表示・カレンダー' + o.cals.length + 'つ' + (d ? '・' + (d.getMonth() + 1) + '/' + d.getDate() + ' 更新' : '');
   }
+  function drawLinks() {
+    $('linksTitle').textContent = '保存したリンク（' + links.length + '）';
+    const box = $('links'); box.innerHTML = '';
+    links.slice().reverse().forEach(function (l) {
+      const row = el('div', 'lrow' + (editing === l.id ? ' on' : ''));
+      const g = el('div', 'grow');
+      const nm = el('div', 'nm', l.name);
+      if (editing === l.id) nm.appendChild(el('span', 'badge', '編集中'));
+      g.appendChild(nm); g.appendChild(el('div', 'meta', describe(l)));
+      row.appendChild(g);
+      const cp = el('button', 'btn sm', 'リンクをコピー');
+      cp.onclick = function (e) { e.stopPropagation(); copy(base + l.hash, 'リンク'); };
+      const del = el('button', 'del', '削除');
+      del.onclick = async function (e) {
+        e.stopPropagation();
+        if (!confirm('「' + l.name + '」を一覧から消しますか？（すでに貼った枠は消えません）')) return;
+        links = links.filter(function (x) { return x.id !== l.id; });
+        await NCW.saveLinks(links).then(function () { toast('一覧から消しました'); }).catch(function (er) { showMsg(er.message, true); });
+        if (editing === l.id || !links.length) resetForm();
+        drawLogin(); drawLinks(); update();
+      };
+      row.appendChild(cp); row.appendChild(del);
+      row.onclick = function () { openLink(l); };
+      box.appendChild(row);
+    });
+  }
+  $('newLink').onclick = function () { resetForm(); toast('新しいリンクを作ります'); };
 
   function showMsg(t, ng) { const m = $('msg'); m.textContent = t; m.className = 'msg ' + (ng ? 'ng' : 'ok'); }
   function nameOf(o) { return o.title || o.cals.map(function (c) { return c.label || c.id.split('@')[0]; }).join('・') || 'カレンダー'; }
 
   $('save').onclick = async function () {
     const o = opts();
-    const name = nameOf(o), hash = NCW.makeHash(o), at = new Date().toISOString();
+    const name = $('lname').value.trim() || nameOf(o), hash = NCW.makeHash(o), at = new Date().toISOString();
     const before = links.slice();
     if (editing && links.some(function (l) { return l.id === editing; })) links = links.map(function (l) { return l.id === editing ? Object.assign({}, l, {name: name, hash: hash, at: at}) : l; });
     else { editing = 'l' + Date.now().toString(36); links.push({id: editing, name: name, hash: hash, at: at}); }
     showMsg('保存しています…');
     try {
       await NCW.saveLinks(links);
-      showMsg('保存しました。左の「作ったリンク」から、いつでも開いて直せます。');
+      savedHash = hash; savedName = name; $('lname').value = name;
+      showMsg('保存しました。次からは左上の「保存したリンク」から開いて直せます。続けて「リンクをコピー」を押して、Notion に貼ってください。');
       toast('保存しました');
+      drawLogin();
     } catch (e) {
       links = before;
       showMsg(e.code === 401 ? 'ログインが切れました。右上からログインし直して、もう一度保存してください。' : '保存できませんでした（' + e.message + '）。少し待ってもう一度押してください。', true);
@@ -445,13 +520,24 @@
     const o = opts(), l = linkOf(o);
     copy('<iframe src="' + l.replace(/"/g, '&quot;') + '" title="' + nameOf(o).replace(/[<>"&]/g, '') + '" style="width:100%;height:600px;border:0"></iframe>', '埋め込みコード');
   };
-  ['title', 'h0', 'h1', 'weekend', 'allday', 'hide', 'clear', 'nav'].forEach(function (id) {
+  ['title', 'lname', 'h0', 'h1', 'weekend', 'allday', 'hide', 'clear', 'nav'].forEach(function (id) {
     $(id).addEventListener('input', update); $(id).addEventListener('change', update);
   });
 
-  drawLogin();
-  update();
-  NCW.ready.then(function () { if (NCW.loggedIn()) start(); });
+  if (DEMO) {
+    me = {email: 'demo@asiro.co.jp', family_name: '見本'};
+    myCals = [{id: 'demo@asiro.co.jp', name: '見本 太郎', color: '#039be5', primary: true}, {id: 'team@group.calendar.google.com', name: 'マーケチーム', color: '#e67c73', primary: false}];
+    if (new URLSearchParams(location.search).get('links') === '1') links = [
+      {id: 'a', name: '上司用・今週の予定', hash: NCW.makeHash({cals: [{id: 'demo@asiro.co.jp', color: 'auto', label: '見本'}], view: 'week'}), at: '2026-11-05T10:00:00Z'},
+      {id: 'b', name: 'マーケチーム（月）', hash: NCW.makeHash({cals: [{id: 'demo@asiro.co.jp', color: 'auto', label: '見本'}, {id: 'team@group.calendar.google.com', color: '#e67c73', label: 'チーム'}], view: 'month', title: 'マーケチーム'}), at: '2026-11-04T10:00:00Z'}];
+    NCW.saveLinks = function () { return Promise.resolve(); };
+    drawLogin();
+    if (links.length) openLink(links[links.length - 1]); else resetForm();
+  } else {
+    drawLogin();
+    update();
+    NCW.ready.then(function () { if (NCW.loggedIn()) start(); });
+  }
 })();
 </script>
 </body>
